@@ -138,11 +138,13 @@ def make_excel(anomaly_detail: pd.DataFrame, rekap: pd.DataFrame, combined: pd.D
                hari_detail: pd.DataFrame, sukarela_detail: pd.DataFrame, df_clean: pd.DataFrame) -> bytes:
     output = io.BytesIO()
     
-    # Detail transaksi HariRaya anomali
-    hari_anomali_ids = hari_detail[hari_detail['Anomaly_HariRaya'] == 1]['ID'].unique()
-    hari_trans = df_clean[df_clean['ID'].isin(hari_anomali_ids)][
-        ['ID', 'NAMA', 'CENTER', 'TRANS. DATE', 'YEAR_WEEK', 'Db HariRaya']
-    ].sort_values(['ID', 'TRANS. DATE'])
+    # Detail transaksi HariRaya anomali (hanya minggu yang anomali)
+    hari_anomali_weeks = hari_detail[hari_detail['Anomaly_HariRaya'] == 1][['ID', 'YEAR_WEEK']]
+    hari_trans = df_clean.merge(
+        hari_anomali_weeks,
+        on=['ID', 'YEAR_WEEK'],
+        how='inner'
+    )[['ID', 'NAMA', 'CENTER', 'TRANS. DATE', 'YEAR_WEEK', 'Db HariRaya']].sort_values(['ID', 'TRANS. DATE'])
     hari_trans = hari_trans.merge(
         hari_detail[['ID', 'YEAR_WEEK', 'Z_Score', 'Anomaly_HariRaya']], 
         on=['ID', 'YEAR_WEEK'], 
@@ -247,11 +249,13 @@ def main():
 
     st.subheader('Tabel Detail Anomali (dengan Tanggal Transaksi)')
     if mode_filter == 'HariRaya':
-        # Tampilkan transaksi per minggu yang anomali
-        hari_anomali_ids = hari[hari['Anomaly_HariRaya'] == 1]['ID'].unique()
-        detail_trans = df_clean[df_clean['ID'].isin(hari_anomali_ids)][
-            ['ID', 'NAMA', 'CENTER', 'TRANS. DATE', 'YEAR_WEEK', 'Db HariRaya']
-        ].sort_values(['ID', 'TRANS. DATE'])
+        # Tampilkan hanya transaksi di minggu yang terdeteksi anomali
+        hari_anomali_weeks = hari[hari['Anomaly_HariRaya'] == 1][['ID', 'YEAR_WEEK']]
+        detail_trans = df_clean.merge(
+            hari_anomali_weeks,
+            on=['ID', 'YEAR_WEEK'],
+            how='inner'
+        )[['ID', 'NAMA', 'CENTER', 'TRANS. DATE', 'YEAR_WEEK', 'Db HariRaya']].sort_values(['ID', 'TRANS. DATE'])
         detail_trans = detail_trans.merge(
             hari[['ID', 'YEAR_WEEK', 'Z_Score', 'Anomaly_HariRaya']], 
             on=['ID', 'YEAR_WEEK'], 
