@@ -155,7 +155,7 @@ def make_excel(anomaly_detail: pd.DataFrame, rekap: pd.DataFrame, combined: pd.D
         ['ID', 'NAMA', 'CENTER', 'TRANS. DATE', 'Db Sukarela', 'Cr Sukarela']
     ].sort_values(['ID', 'TRANS. DATE'])
     sukarela_trans = sukarela_trans.merge(
-        sukarela_detail[['ID', 'Anomaly_Sukarela', 'Anomaly_Decision_Score']], 
+        sukarela_detail[['ID', 'Anomaly_Sukarela', 'Anomaly_Sukarela_Score']], 
         on='ID', 
         how='left'
     )
@@ -266,7 +266,7 @@ def main():
             ['ID', 'NAMA', 'CENTER', 'TRANS. DATE', 'Db Sukarela', 'Cr Sukarela']
         ].sort_values(['ID', 'TRANS. DATE'])
         detail_trans = detail_trans.merge(
-            sukarela[['ID', 'Anomaly_Sukarela', 'Anomaly_Decision_Score']], 
+            sukarela[['ID', 'Anomaly_Sukarela', 'Anomaly_Sukarela_Score']], 
             on='ID', 
             how='left'
         )
