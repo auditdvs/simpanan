@@ -178,8 +178,7 @@ def main():
     st.markdown('01. Ambil data dari database lalu rename jadi **THC.csv**,')
     st.markdown('02. Upload file tersebut, untuk detailnya ada dalam bentuk file excel.')
     st.markdown('03. Jika file nya di olah manual, ubah bagian header menajadi seperti ini:')
-    st.markdown('ID,NAMA,CENTER,KELOMPOK,HARI,JAM,SL,TRANS. DATE,Db Qurban,Cr Qurban,Db Khusus,Cr Khusus,Db HariRaya,Cr HariRaya,Db Pensiun,Cr Pensiun,Db Pokok,Cr Pokok,Db SIPADAN,Cr SIPADAN,Db Sukarela,Cr Sukarela,Db Wajib,Cr Wajib,Db Total,Cr Total,Db PTN,Cr PTN,Db PRT,Cr PRT,Db DTP,Cr DTP,Db PMB,Cr PMB,Db PRR,Cr PRR,Db PSA,Cr PSA,Db PU,Cr PU,Db Total2,Cr Total2')
-
+    st.markdown('ID | NAMA | CENTER | KELOMPOK | HARI | JAM | SL | TRANS. DATE | Db Qurban | Cr Qurban | Db Khusus | Cr Khusus | Db HariRaya | Cr HariRaya | Db Pensiun | Cr Pensiun | Db Pokok | Cr Pokok | Db SIPADAN | Cr SIPADAN | Db Sukarela | Cr Sukarela | Db Wajib | Cr Wajib | Db Total | Cr Total | Db PTN | Cr PTN | Db PRT | Cr PRT | Db DTP | Cr DTP | Db PMB | Cr PMB | Db PRR | Cr PRR | Db PSA | Cr PSA | Db PU | Cr PU | Db Total2 | Cr Total2')
     scaler, iso, metadata = load_models()
     threshold = metadata.get('rolling_zscore_threshold', 1.0)
 
