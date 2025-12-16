@@ -134,12 +134,38 @@ def combine_results(df_clean: pd.DataFrame, hari: pd.DataFrame, sukarela: pd.Dat
     return combined, rekap
 
 
-def make_excel(anomaly_detail: pd.DataFrame, rekap: pd.DataFrame, combined: pd.DataFrame) -> bytes:
+def make_excel(anomaly_detail: pd.DataFrame, rekap: pd.DataFrame, combined: pd.DataFrame, 
+               hari_detail: pd.DataFrame, sukarela_detail: pd.DataFrame, df_clean: pd.DataFrame) -> bytes:
     output = io.BytesIO()
+    
+    # Detail transaksi HariRaya anomali
+    hari_anomali_ids = hari_detail[hari_detail['Anomaly_HariRaya'] == 1]['ID'].unique()
+    hari_trans = df_clean[df_clean['ID'].isin(hari_anomali_ids)][
+        ['ID', 'NAMA', 'CENTER', 'TRANS. DATE', 'YEAR_WEEK', 'Db HariRaya']
+    ].sort_values(['ID', 'TRANS. DATE'])
+    hari_trans = hari_trans.merge(
+        hari_detail[['ID', 'YEAR_WEEK', 'Z_Score', 'Anomaly_HariRaya']], 
+        on=['ID', 'YEAR_WEEK'], 
+        how='left'
+    )
+    
+    # Detail transaksi Sukarela anomali
+    sukarela_anomali_ids = sukarela_detail[sukarela_detail['Anomaly_Sukarela'] == 1]['ID'].unique()
+    sukarela_trans = df_clean[df_clean['ID'].isin(sukarela_anomali_ids)][
+        ['ID', 'NAMA', 'CENTER', 'TRANS. DATE', 'Db Sukarela', 'Cr Sukarela']
+    ].sort_values(['ID', 'TRANS. DATE'])
+    sukarela_trans = sukarela_trans.merge(
+        sukarela_detail[['ID', 'Anomaly_Sukarela', 'Anomaly_Decision_Score']], 
+        on='ID', 
+        how='left'
+    )
+    
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        anomaly_detail.to_excel(writer, sheet_name='anomaly_detail', index=False)
+        anomaly_detail.to_excel(writer, sheet_name='anomaly_summary', index=False)
         rekap.to_excel(writer, sheet_name='rekap_center', index=False)
-        combined.to_excel(writer, sheet_name='data_with_flags', index=False)
+        hari_trans.to_excel(writer, sheet_name='detail_hariraya', index=False)
+        sukarela_trans.to_excel(writer, sheet_name='detail_sukarela', index=False)
+        combined.to_excel(writer, sheet_name='all_members_flags', index=False)
     output.seek(0)
     return output.read()
 
@@ -209,8 +235,8 @@ def main():
     col4.metric('Anomali Final', f"{combined['Anomaly_Final'].sum():,}")
 
     st.subheader('Unduh Hasil')
-    excel_bytes = make_excel(anomaly_detail, rekap, combined)
-    st.download_button('Download Excel (3 sheet)', excel_bytes, file_name='thc_anomaly_results.xlsx', mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    excel_bytes = make_excel(anomaly_detail, rekap, combined, hari, sukarela, df_clean)
+    st.download_button('Download Excel (5 sheet)', excel_bytes, file_name='thc_anomaly_results.xlsx', mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
     st.subheader('Visualisasi')
     chart = plot_top_centers(rekap, mode_filter)
@@ -219,15 +245,41 @@ def main():
     st.subheader('Breakdown HariRaya vs Sukarela (Top 15 CENTER)')
     st.altair_chart(plot_breakdown(rekap), use_container_width=True)
 
-    st.subheader('Tabel Anomali')
+    st.subheader('Tabel Detail Anomali (dengan Tanggal Transaksi)')
     if mode_filter == 'HariRaya':
-        table = hari[hari['Anomaly_HariRaya'] == 1][['ID', 'NAMA', 'CENTER', 'YEAR_WEEK', 'Db HariRaya', 'Z_Score']]
-        st.dataframe(table)
+        # Tampilkan transaksi per minggu yang anomali
+        hari_anomali_ids = hari[hari['Anomaly_HariRaya'] == 1]['ID'].unique()
+        detail_trans = df_clean[df_clean['ID'].isin(hari_anomali_ids)][
+            ['ID', 'NAMA', 'CENTER', 'TRANS. DATE', 'YEAR_WEEK', 'Db HariRaya']
+        ].sort_values(['ID', 'TRANS. DATE'])
+        detail_trans = detail_trans.merge(
+            hari[['ID', 'YEAR_WEEK', 'Z_Score', 'Anomaly_HariRaya']], 
+            on=['ID', 'YEAR_WEEK'], 
+            how='left'
+        )
+        detail_trans['TRANS. DATE'] = pd.to_datetime(detail_trans['TRANS. DATE']).dt.strftime('%Y-%m-%d')
+        st.dataframe(detail_trans, use_container_width=True)
     elif mode_filter == 'Sukarela':
-        table = sukarela[sukarela['Anomaly_Sukarela'] == 1][['ID', 'NAMA', 'CENTER', 'Db Sukarela_Total', 'Cr Sukarela_Total', 'Anomaly_Decision_Score']]
-        st.dataframe(table)
+        # Tampilkan semua transaksi Sukarela dari ID yang anomali
+        sukarela_anomali_ids = sukarela[sukarela['Anomaly_Sukarela'] == 1]['ID'].unique()
+        detail_trans = df_clean[df_clean['ID'].isin(sukarela_anomali_ids)][
+            ['ID', 'NAMA', 'CENTER', 'TRANS. DATE', 'Db Sukarela', 'Cr Sukarela']
+        ].sort_values(['ID', 'TRANS. DATE'])
+        detail_trans = detail_trans.merge(
+            sukarela[['ID', 'Anomaly_Sukarela', 'Anomaly_Decision_Score']], 
+            on='ID', 
+            how='left'
+        )
+        detail_trans['TRANS. DATE'] = pd.to_datetime(detail_trans['TRANS. DATE']).dt.strftime('%Y-%m-%d')
+        st.dataframe(detail_trans, use_container_width=True)
     else:
-        st.dataframe(anomaly_detail[['ID', 'NAMA', 'CENTER', 'Is_Anomaly_HariRaya', 'Is_Anomaly_Sukarela']])
+        # Tampilkan gabungan
+        anomaly_ids = anomaly_detail['ID'].unique()
+        detail_trans = df_clean[df_clean['ID'].isin(anomaly_ids)][
+            ['ID', 'NAMA', 'CENTER', 'TRANS. DATE', 'Db HariRaya', 'Db Sukarela', 'Cr Sukarela']
+        ].sort_values(['ID', 'TRANS. DATE'])
+        detail_trans['TRANS. DATE'] = pd.to_datetime(detail_trans['TRANS. DATE']).dt.strftime('%Y-%m-%d')
+        st.dataframe(detail_trans, use_container_width=True)
 
 
 if __name__ == '__main__':
