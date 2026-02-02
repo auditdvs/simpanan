@@ -1,7 +1,7 @@
+streamlit>=1.28.0
 pandas
 numpy
 scikit-learn
-streamlit
 altair
 joblib
 xlsxwriter
