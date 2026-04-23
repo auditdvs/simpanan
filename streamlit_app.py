@@ -24,6 +24,8 @@ def detect_delimiter(buffer: io.BytesIO) -> str:
     pos = buffer.tell()
     first_line = buffer.readline().decode('utf-8', errors='ignore')
     buffer.seek(pos)
+    if first_line.count('\t') > first_line.count(';') and first_line.count('\t') > first_line.count(','):
+        return '\t'
     return ';' if first_line.count(';') > first_line.count(',') else ','
 
 
@@ -75,8 +77,8 @@ def rolling_zscore(df: pd.DataFrame, window: int = 3, threshold: float = 1.0) ->
         g['Anomaly_HariRaya'] = (np.abs(g['Z_Score']) > threshold).astype(int)
         return g
 
-    result = weekly.groupby('ID', group_keys=False).apply(calc).reset_index(drop=True)
-    return result
+        result = weekly.groupby('ID', group_keys=False).apply(calc).reset_index(drop=True)
+        return result
 
 
 def aggregate_sukarela(df: pd.DataFrame) -> pd.DataFrame:
